@@ -1,0 +1,12 @@
+{
+  "name": "LocaLiquid",
+  "short_name": "LocaLiquid",
+  "description": "Offline net worth engine — your complete financial picture",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#06B6D4",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

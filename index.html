@@ -3,72 +3,624 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>LocaLiquid — Net Worth Engine</title>
+<title>LocaLiquid</title>
+<link rel="manifest" href="./manifest.json" />
+
+<script>
+  window.tailwind = {
+    config: { theme: { extend: { fontSize: { 'xxs':['0.625rem',{lineHeight:'0.875rem'}], 'xxxs':['0.5rem',{lineHeight:'0.75rem'}] } } } }
+  }
+</script>
 <script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  * { font-family: 'Space Mono', 'Courier New', monospace; }
-  :root { --brand: #06B6D4; --brand-dim: rgba(6,182,212,0.15); --brand-border: rgba(6,182,212,0.3); --brand-text: #67E8F9; }
-  body { background: #0f172a; color: #f1f5f9; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .pulse { animation: pulse 2.6s ease-in-out infinite; }
-  .feature-item::before { content: "→"; color: var(--brand-text); margin-right: 10px; flex-shrink: 0; }
-  .feature-item { display: flex; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; color: #cbd5e1; }
-  .feature-item:last-child { border-bottom: none; }
+.suite-drum-wrap{height:44px;overflow:hidden;display:inline-block;vertical-align:middle;position:relative;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 22%,#000 78%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,#000 22%,#000 78%,transparent 100%);}
+.suite-drum{position:relative;transition:transform 0.52s cubic-bezier(0.4,0,0.2,1);will-change:transform;}
+.suite-face{display:block;height:44px;line-height:44px;white-space:nowrap;font-family:'Space Mono','Courier New',monospace;font-size:28px;font-weight:700;color:#06B6D4;}
+#suiteLauncher{background:rgba(15,17,26,0.97);border-bottom:1px solid rgba(6,182,212,0.18);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.suite-module-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid transparent;background:rgba(255,255,255,0.03);cursor:pointer;transition:background 0.15s,border-color 0.15s,transform 0.1s;text-align:left;width:100%;}
+.suite-module-btn:active{transform:scale(0.97);}
+.suite-module-btn.active{background:rgba(6,182,212,0.14);border-color:rgba(6,182,212,0.38);}
+.suite-module-btn:not(.active):hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.08);}
+.suite-module-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.float-wrap{position:relative;}
+.float-input{width:100%;padding:20px 12px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#f1f5f9;font-family:'Space Mono',monospace;font-size:14px;transition:border-color 0.15s;-webkit-appearance:none;appearance:none;}
+.float-input:focus{outline:none;border-color:#06B6D4;}
+.float-label{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:#64748b;pointer-events:none;transition:all 0.15s ease;font-family:'Space Mono',monospace;}
+.float-label.active,.float-input.has-value ~ .float-label,.float-input:focus ~ .float-label{top:8px;transform:none;font-size:10px;color:#06B6D4;}
+.tab{font-family:'Space Mono',monospace;font-size:11px;transition:color 0.15s;}
+.tab.active{color:#06B6D4;}
+/* Mini sparkline bar */
+.spark-bar{display:inline-block;width:6px;background:#06B6D4;border-radius:2px 2px 0 0;vertical-align:bottom;margin:0 1px;}
+#toast{position:fixed;bottom:calc(5.5rem + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(12px);background:#1e293b;color:#f1f5f9;padding:10px 18px;border-radius:10px;font-size:12px;font-family:'Space Mono',monospace;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 0.2s,transform 0.2s;z-index:9999;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-start px-5 pt-16 pb-12">
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col" style="overscroll-behavior:none;">
 
-  <div class="w-full max-w-sm">
+<div id="toast"></div>
 
-    <a href="https://loca.n8.wtf" class="inline-flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors mb-10" style="text-decoration:none">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      LocaLedger Suite
-    </a>
-
-    <div class="flex items-center gap-4 mb-4">
-      <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:var(--brand-dim);border:1px solid var(--brand-border)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.8">
-          <path d="M12 2c0 0-8 6.5-8 12a8 8 0 0016 0c0-5.5-8-12-8-12z"/>
-        </svg>
-      </div>
-      <div>
-        <div class="text-2xl font-bold" style="color:var(--brand-text)">LocaLiquid</div>
-        <div class="text-xs text-slate-400 mt-0.5">Net Worth Engine</div>
+<!-- Header -->
+<header class="sticky top-0 z-40 flex items-center justify-between px-4 py-2"
+  style="background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);padding-top:max(0.5rem,env(safe-area-inset-top))">
+  <div class="flex items-center gap-2 cursor-pointer" onclick="toggleSuiteLauncher()">
+    <div class="suite-drum-wrap" style="width:48px">
+      <div id="suiteDrum" class="suite-drum">
+        <span class="suite-face">💰</span><span class="suite-face">📉</span><span class="suite-face">📊</span>
+        <span class="suite-face">💸</span><span class="suite-face">📈</span><span class="suite-face">💧</span>
+        <span class="suite-face">💰</span>
       </div>
     </div>
-
-    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-6 pulse" style="background:var(--brand-dim);color:var(--brand-text);border:1px solid var(--brand-border)">
-      <span>●</span> In Development
+    <div>
+      <div style="font-size:15px;font-weight:700;color:#06B6D4;font-family:'Space Mono',monospace;line-height:1.1">LocaLiquid</div>
+      <div style="font-size:9px;color:#64748b;font-family:'Space Mono',monospace">NET WORTH ENGINE</div>
     </div>
-
-    <p class="text-sm text-slate-300 leading-relaxed mb-8">
-      Your entire financial life distilled into one living number. Assets minus liabilities, projected into the future. The capstone of the LocaLedger suite.
-    </p>
-
-    <div class="h-px mb-6" style="background:rgba(255,255,255,0.07)"></div>
-
-    <div class="text-xxs font-bold tracking-widest uppercase text-slate-500 mb-3" style="font-size:10px">Planned Features</div>
-    <div class="mb-8">
-      <div class="feature-item">Real-time net worth — assets minus all liabilities</div>
-      <div class="feature-item">Liquid vs. illiquid asset breakdown</div>
-      <div class="feature-item">Net worth over time chart with milestone markers</div>
-      <div class="feature-item">Wealth projection at 5, 10, 25 years</div>
-      <div class="feature-item">Retirement readiness score (4% rule model)</div>
-      <div class="feature-item">Inflation-adjusted projection mode</div>
-      <div class="feature-item">Reads from all LocaLedger apps automatically</div>
-    </div>
-
-    <div class="p-3 rounded-xl text-xs text-slate-400 mb-8" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
-      <span class="font-bold" style="color:var(--brand-text)">Offline-first.</span> Your financial data never leaves your device. No accounts required for the free tier.
-    </div>
-
-    <div class="text-center text-xs text-slate-600">
-      Part of the
-      <a href="https://loca.n8.wtf" style="color:var(--brand-text);text-decoration:none">LocaLedger Suite</a>
-      &nbsp;·&nbsp; AGPL-3.0
-    </div>
-
   </div>
+  <button data-tab="settings" class="tab p-2 text-gray-400" aria-label="Settings">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+</header>
+
+<!-- Suite Launcher -->
+<div id="suiteLauncher" class="hidden sticky z-30" style="top:56px">
+  <div class="px-4 py-3 max-w-lg mx-auto">
+    <div class="grid grid-cols-3 gap-2">
+      <button class="suite-module-btn" onclick="switchSuiteModule('labor')"><span class="suite-module-icon" style="background:rgba(99,102,241,0.15)"><span style="font-size:18px">💰</span></span><div><div style="font-size:11px;font-weight:700;color:#f1f5f9;font-family:'Space Mono',monospace">Labor</div><div style="font-size:9px;color:#64748b;font-family:'Space Mono',monospace">INCOME</div></div></button>
+      <button class="suite-module-btn" onclick="switchSuiteModule('loss')"><span class="suite-module-icon" style="background:rgba(244,63,94,0.15)"><span style="font-size:18px">📉</span></span><div><div style="font-size:11px;font-weight:700;color:#f1f5f9;font-family:'Space Mono',monospace">Loss</div><div style="font-size:9px;color:#64748b;font-family:'Space Mono',monospace">SPENDING</div></div></button>
+      <button class="suite-module-btn" onclick="switchSuiteModule('limit')"><span class="suite-module-icon" style="background:rgba(245,158,11,0.15)"><span style="font-size:18px">📊</span></span><div><div style="font-size:11px;font-weight:700;color:#f1f5f9;font-family:'Space Mono',monospace">Limit</div><div style="font-size:9px;color:#64748b;font-family:'Space Mono',monospace">BUDGET</div></div></button>
+      <button class="suite-module-btn" onclick="switchSuiteModule('loan')"><span class="suite-module-icon" style="background:rgba(249,115,22,0.15)"><span style="font-size:18px">💸</span></span><div><div style="font-size:11px;font-weight:700;color:#f1f5f9;font-family:'Space Mono',monospace">Loan</div><div style="font-size:9px;color:#64748b;font-family:'Space Mono',monospace">DEBT</div></div></button>
+      <button class="suite-module-btn" onclick="switchSuiteModule('legacy')"><span class="suite-module-icon" style="background:rgba(16,185,129,0.15)"><span style="font-size:18px">📈</span></span><div><div style="font-size:11px;font-weight:700;color:#f1f5f9;font-family:'Space Mono',monospace">Legacy</div><div style="font-size:9px;color:#64748b;font-family:'Space Mono',monospace">ASSETS</div></div></button>
+      <button class="suite-module-btn active" onclick="switchSuiteModule('liquid')"><span class="suite-module-icon" style="background:rgba(6,182,212,0.15)"><span style="font-size:18px">💧</span></span><div><div style="font-size:11px;font-weight:700;color:#06B6D4;font-family:'Space Mono',monospace">Liquid</div><div style="font-size:9px;color:#64748b;font-family:'Space Mono',monospace">NET WORTH</div></div></button>
+    </div>
+  </div>
+</div>
+
+<main class="flex-1 overflow-y-auto" style="padding-bottom:calc(5.5rem + env(safe-area-inset-bottom,0px))">
+  <div id="app" class="max-w-lg mx-auto px-4 pt-4"></div>
+</main>
+
+<nav class="fixed bottom-0 left-0 right-0 z-40 flex"
+  style="background:rgba(15,23,42,0.97);backdrop-filter:blur(12px);border-top:1px solid rgba(255,255,255,0.06);padding-bottom:env(safe-area-inset-bottom,0px)">
+  <button data-tab="dashboard" class="tab flex-1 py-3 text-center text-gray-400"><div style="font-size:18px">💧</div><div style="font-size:9px;margin-top:1px">Net Worth</div></button>
+  <button data-tab="snapshot"  class="tab flex-1 py-3 text-center text-gray-400"><div style="font-size:18px">📸</div><div style="font-size:9px;margin-top:1px">Snapshot</div></button>
+  <button data-tab="project"   class="tab flex-1 py-3 text-center text-gray-400"><div style="font-size:18px">🔭</div><div style="font-size:9px;margin-top:1px">Projection</div></button>
+</nav>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════════════ */
+const DATA_KEY    = 'locaLiquidData';
+const META_KEY    = 'locaLiquidMeta';
+const APP_VERSION = '1.0.0';
+const CYAN        = '#06B6D4';
+
+const NW_MILESTONES = [10000,25000,50000,100000,250000,500000,1000000];
+
+/* ═══════════════════════════════════════════════════════
+   STORAGE
+═══════════════════════════════════════════════════════ */
+function loadData() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DATA_KEY) || 'null');
+    if (d && d.version) return d;
+  } catch(_) {}
+  return { snapshots:[], projections: { currentAge:30, retirementAge:65, returnRate:7, currentAge:30 }, version:1 };
+}
+function saveData(d) { d.updatedAt = Date.now(); localStorage.setItem(DATA_KEY, JSON.stringify(d)); }
+
+/* ═══════════════════════════════════════════════════════
+   CROSS-APP READERS
+═══════════════════════════════════════════════════════ */
+function readAll() {
+  const r = { labor:null, loss:null, limit:null, loan:null, legacy:null };
+  try { r.labor  = JSON.parse(localStorage.getItem('income_data')      || 'null'); } catch(_) {}
+  try { r.loss   = JSON.parse(localStorage.getItem('locaLossData')     || 'null'); } catch(_) {}
+  try { r.limit  = JSON.parse(localStorage.getItem('locaLimitData')    || 'null'); } catch(_) {}
+  try { r.loan   = JSON.parse(localStorage.getItem('locaLoanData')     || 'null'); } catch(_) {}
+  try { r.legacy = JSON.parse(localStorage.getItem('locaLegacyData')   || 'null'); } catch(_) {}
+  return r;
+}
+
+function calcAssets(src) {
+  if (!src.legacy) return { total:0, liquid:0, illiquid:0 };
+  const LIQUID_CLASSES = new Set(['stock','etf','crypto','commodity']);
+  let total=0, liquid=0, illiquid=0;
+  (src.legacy.assets || []).filter(a => !a.deleted).forEach(a => {
+    const val = (parseFloat(a.shares||1)) * (parseFloat(a.currentPrice||a.estimatedValue||0));
+    total += val;
+    if (LIQUID_CLASSES.has(a.class)) liquid += val; else illiquid += val;
+  });
+  return { total, liquid, illiquid };
+}
+
+function calcLiabilities(src) {
+  if (!src.loan) return 0;
+  return (src.loan.loans || []).filter(l => !l.deleted).reduce((s,l) => s + (parseFloat(l.balance)||0), 0);
+}
+
+function calcMonthlyIncome(src) {
+  if (!src.labor) return 0;
+  const month = _currentMonth();
+  return (src.labor.entries || []).filter(e => !e.deleted && e.date?.startsWith(month))
+    .reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
+}
+
+function calcMonthlySpending(src) {
+  if (!src.loss) return 0;
+  const month = _currentMonth();
+  return (src.loss.expenses || []).filter(e => !e.deleted && e.date?.startsWith(month))
+    .reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
+}
+
+/* ═══════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════ */
+function $(id) { return document.getElementById(id); }
+function _currentMonth() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function fmtMoney(n, short) {
+  if (n == null) return '$—';
+  const abs = Math.abs(n);
+  if (short && abs >= 1000000) return (n<0?'-':'') + '$' + (abs/1000000).toFixed(2) + 'M';
+  if (short && abs >= 1000)    return (n<0?'-':'') + '$' + (abs/1000).toFixed(1) + 'K';
+  return (n<0?'-':'') + '$' + abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtPct(n) { return (n||0).toFixed(1) + '%'; }
+
+let _toastTimer = null;
+function showToast(msg) {
+  const t = $('toast'); if (!t) return;
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer); _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUITE DRUM
+═══════════════════════════════════════════════════════ */
+const DRUM_FACE_H = 44;
+let _drumStep = 5, _drumIdx = 5, _launcherOpen = false;
+
+function initSuiteDrum() {
+  const drum = $('suiteDrum'); if (!drum) return;
+  drum.style.transform = `translateY(-${_drumStep * DRUM_FACE_H}px)`;
+}
+
+function toggleSuiteLauncher() {
+  _launcherOpen = !_launcherOpen;
+  $('suiteLauncher').classList.toggle('hidden', !_launcherOpen);
+}
+
+function switchSuiteModule(mod) {
+  _launcherOpen = false; $('suiteLauncher').classList.add('hidden');
+  const APP_URLS = { labor:'/Labor/', loss:'/Loss/', limit:'/Limit/', loan:'/Loan/', legacy:'/Legacy/' };
+  if (mod === 'liquid') { switchTab('dashboard'); return; }
+  if (APP_URLS[mod]) window.location.href = APP_URLS[mod];
+}
+
+/* ═══════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════ */
+let _activeTab = 'dashboard';
+
+function switchTab(tab) {
+  _activeTab = tab;
+  document.querySelectorAll('.tab[data-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+  const app = $('app'); if (!app) return; app.innerHTML = '';
+  if (tab === 'dashboard') renderDashboard();
+  else if (tab === 'snapshot')  renderSnapshot();
+  else if (tab === 'project')   renderProjection();
+  else if (tab === 'settings')  renderSettings();
+}
+
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════ */
+function renderDashboard() {
+  const app = $('app'); if (!app) return;
+  const src         = readAll();
+  const assets      = calcAssets(src);
+  const liabilities = calcLiabilities(src);
+  const netWorth    = assets.total - liabilities;
+  const income      = calcMonthlyIncome(src);
+  const spending    = calcMonthlySpending(src);
+  const savings     = income - spending;
+  const savingsRate = income > 0 ? (savings / income * 100) : null;
+
+  // Month-over-month change
+  const lqData = loadData();
+  const snapshots = (lqData.snapshots || []).slice().sort((a,b) => a.date.localeCompare(b.date));
+  const prevSnap  = snapshots.length >= 2 ? snapshots[snapshots.length - 2] : null;
+  const momChange = prevSnap ? netWorth - prevSnap.netWorth : null;
+
+  // Milestone check
+  const nextMilestone = NW_MILESTONES.find(m => m > netWorth);
+  const toMilestone   = nextMilestone ? nextMilestone - netWorth : null;
+
+  // Source status
+  const sources = [
+    { key:'legacy', icon:'📈', label:'LocaLegacy', sub:'Assets',      color:'#10B981', val:src.legacy ? fmtMoney(assets.total, true) : null,      link:'legacy'  },
+    { key:'loan',   icon:'💸', label:'LocaLoan',   sub:'Liabilities', color:'#F97316', val:src.loan   ? fmtMoney(liabilities, true) : null,          link:'loan'    },
+    { key:'labor',  icon:'💰', label:'LocaLabor',  sub:'Income/mo',   color:'#6366F1', val:src.labor  ? fmtMoney(income, true) : null,               link:'labor'   },
+    { key:'loss',   icon:'📉', label:'LocaLoss',   sub:'Spending/mo', color:'#F43F5E', val:src.loss   ? fmtMoney(spending, true) : null,             link:'loss'    },
+  ];
+
+  const nwColor = netWorth > 0 ? CYAN : netWorth < 0 ? '#F43F5E' : '#64748b';
+
+  app.innerHTML = `
+    <div class="text-xs text-gray-500 uppercase tracking-widest mb-4" style="font-family:'Space Mono',monospace;letter-spacing:0.1em">Net Worth</div>
+
+    <!-- Big number -->
+    <div class="rounded-2xl p-6 mb-4 text-center" style="background:rgba(6,182,212,0.07);border:1px solid rgba(6,182,212,0.22)">
+      <div class="text-xxs text-gray-500 mb-2" style="font-family:'Space Mono',monospace">TOTAL NET WORTH</div>
+      <div class="text-4xl font-bold mb-1" style="color:${nwColor};font-family:'Space Mono',monospace">${fmtMoney(netWorth, true)}</div>
+      ${momChange != null ? `<div class="text-sm" style="color:${momChange >= 0 ? '#10B981' : '#F43F5E'};font-family:'Space Mono',monospace">${momChange >= 0 ? '▲' : '▼'} ${fmtMoney(Math.abs(momChange), true)} vs last snapshot</div>` : ''}
+      ${toMilestone != null ? `<div class="text-xxs text-gray-500 mt-2">${fmtMoney(toMilestone, true)} to ${fmtMoney(nextMilestone, true)} milestone</div>` : ''}
+    </div>
+
+    <!-- Assets vs Liabilities -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="rounded-xl p-3" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2)">
+        <div class="text-xxs text-gray-500 mb-1" style="font-family:'Space Mono',monospace">TOTAL ASSETS</div>
+        <div class="text-sm font-bold" style="color:#10B981;font-family:'Space Mono',monospace">${fmtMoney(assets.total, true)}</div>
+        <div class="text-xxs text-gray-600 mt-1">💧 ${fmtMoney(assets.liquid, true)} liquid</div>
+      </div>
+      <div class="rounded-xl p-3" style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2)">
+        <div class="text-xxs text-gray-500 mb-1" style="font-family:'Space Mono',monospace">LIABILITIES</div>
+        <div class="text-sm font-bold" style="color:#F97316;font-family:'Space Mono',monospace">${fmtMoney(liabilities, true)}</div>
+        <div class="text-xxs text-gray-600 mt-1">Total debt</div>
+      </div>
+    </div>
+
+    ${savingsRate != null ? `
+    <!-- Cash flow strip -->
+    <div class="rounded-xl p-3 mb-4 flex items-center justify-between" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div>
+        <div class="text-xxs text-gray-500" style="font-family:'Space Mono',monospace">MONTHLY CASH FLOW</div>
+        <div class="text-sm font-bold" style="color:${savings >= 0 ? '#10B981' : '#F43F5E'};font-family:'Space Mono',monospace">${savings >= 0 ? '+' : ''}${fmtMoney(savings, true)}</div>
+      </div>
+      <div class="text-right">
+        <div class="text-xxs text-gray-500" style="font-family:'Space Mono',monospace">SAVINGS RATE</div>
+        <div class="text-sm font-bold" style="color:${savingsRate >= 20 ? '#10B981' : savingsRate >= 10 ? '#F59E0B' : '#F43F5E'};font-family:'Space Mono',monospace">${fmtPct(savingsRate)}</div>
+      </div>
+    </div>` : ''}
+
+    <!-- Data sources -->
+    <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div class="text-xs font-bold text-gray-300 mb-3" style="font-family:'Space Mono',monospace">Data Sources</div>
+      ${sources.map(s => `
+        <button onclick="switchSuiteModule('${s.link}')" class="w-full flex items-center justify-between p-2 rounded-lg mb-1.5" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05)">
+          <span class="flex items-center gap-2 text-xs text-gray-400"><span>${s.icon}</span><span>${s.label}</span><span class="text-xxs text-gray-600">${s.sub}</span></span>
+          ${s.val
+            ? `<span class="text-xs font-bold" style="color:${s.color};font-family:'Space Mono',monospace">${s.val}</span>`
+            : `<span class="text-xxs" style="color:#F59E0B;font-family:'Space Mono',monospace">No data →</span>`}
+        </button>`).join('')}
+    </div>
+
+    <!-- Log snapshot CTA -->
+    <button onclick="logSnapshot()" class="w-full py-3 rounded-xl text-sm font-bold text-white" style="background:rgba(6,182,212,0.2);border:1px solid rgba(6,182,212,0.4);color:#06B6D4;font-family:'Space Mono',monospace">
+      📸 Log Today's Snapshot
+    </button>
+  `;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SNAPSHOT (history + net worth chart)
+═══════════════════════════════════════════════════════ */
+function renderSnapshot() {
+  const app = $('app'); if (!app) return;
+  const lqData    = loadData();
+  const snapshots = (lqData.snapshots || []).slice().sort((a,b) => b.date.localeCompare(a.date));
+
+  // Mini sparkline from snapshots
+  const sorted     = snapshots.slice().reverse();
+  const maxNW      = Math.max(...sorted.map(s => s.netWorth), 1);
+  const sparkBars  = sorted.slice(-20).map(s => {
+    const h = Math.max(Math.round((s.netWorth / maxNW) * 60), 2);
+    const c = s.netWorth > 0 ? CYAN : '#F43F5E';
+    return `<span class="spark-bar" style="height:${h}px;background:${c}"></span>`;
+  }).join('');
+
+  const src   = readAll();
+  const assets = calcAssets(src);
+  const liab   = calcLiabilities(src);
+  const nw     = assets.total - liab;
+
+  app.innerHTML = `
+    <div class="text-xs text-gray-500 uppercase tracking-widest mb-4" style="font-family:'Space Mono',monospace;letter-spacing:0.1em">Net Worth History</div>
+
+    ${sorted.length > 1 ? `
+    <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div class="text-xs text-gray-400 mb-3" style="font-family:'Space Mono',monospace">Trend (${sorted.length} snapshots)</div>
+      <div class="flex items-end gap-px" style="height:64px">${sparkBars || '<span class="text-xxs text-gray-600">No data yet</span>'}</div>
+      <div class="flex justify-between text-xxs text-gray-600 mt-1">
+        <span>${sorted[0]?.date || ''}</span>
+        <span>${sorted[sorted.length-1]?.date || ''}</span>
+      </div>
+    </div>` : `
+    <div class="rounded-xl p-4 mb-4 text-center" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div class="text-xs text-gray-500">Open this app regularly to build your net worth chart.</div>
+    </div>`}
+
+    <button onclick="logSnapshot()" class="w-full py-3 rounded-xl text-sm font-bold mb-4" style="background:rgba(6,182,212,0.2);border:1px solid rgba(6,182,212,0.4);color:#06B6D4;font-family:'Space Mono',monospace">📸 Log Snapshot Now (${fmtMoney(nw, true)})</button>
+
+    ${snapshots.length ? `
+    <div class="text-xxs text-gray-500 uppercase tracking-widest mb-2" style="font-family:'Space Mono',monospace">History</div>
+    ${snapshots.map((s,i) => {
+      const prev = snapshots[i+1];
+      const ch   = prev ? s.netWorth - prev.netWorth : null;
+      return `<div class="flex items-center justify-between py-2.5" style="border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div>
+          <div class="text-xs text-gray-300">${s.date}</div>
+          <div class="text-xxs text-gray-500">${fmtMoney(s.totalAssets, true)} assets · ${fmtMoney(s.totalLiabilities, true)} liab</div>
+        </div>
+        <div class="text-right">
+          <div class="text-sm font-bold" style="color:${s.netWorth >= 0 ? CYAN : '#F43F5E'};font-family:'Space Mono',monospace">${fmtMoney(s.netWorth, true)}</div>
+          ${ch != null ? `<div class="text-xxs" style="color:${ch >= 0 ? '#10B981' : '#F43F5E'}">${ch >= 0 ? '+' : ''}${fmtMoney(ch, true)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}` : ''}
+  `;
+}
+
+function logSnapshot() {
+  const src    = readAll();
+  const assets = calcAssets(src);
+  const liab   = calcLiabilities(src);
+  const nw     = assets.total - liab;
+  const today  = todayISO();
+  const lqData = loadData();
+  lqData.snapshots = lqData.snapshots || [];
+
+  // Update today's snapshot if already exists, otherwise append
+  const idx = lqData.snapshots.findIndex(s => s.date === today);
+  const snap = { date: today, totalAssets: assets.total, totalLiabilities: liab, netWorth: nw };
+  if (idx >= 0) lqData.snapshots[idx] = snap;
+  else lqData.snapshots.push(snap);
+
+  saveData(lqData);
+
+  // Milestone celebration
+  const NW_MILESTONES_HIT = NW_MILESTONES.filter(m => nw >= m);
+  const highest = NW_MILESTONES_HIT[NW_MILESTONES_HIT.length - 1];
+  if (highest) {
+    const prev = lqData.snapshots.slice(0,-1).find(s => s.netWorth < highest);
+    if (prev) showToast('🎉 Milestone reached: ' + fmtMoney(highest, true));
+    else showToast('Snapshot saved · ' + fmtMoney(nw, true));
+  } else {
+    showToast('Snapshot saved · ' + fmtMoney(nw, true));
+  }
+
+  if (_activeTab === 'snapshot') renderSnapshot();
+  else if (_activeTab === 'dashboard') renderDashboard();
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROJECTION
+═══════════════════════════════════════════════════════ */
+function renderProjection() {
+  const app = $('app'); if (!app) return;
+  const lqData = loadData();
+  const proj   = { currentAge:30, retirementAge:65, returnRate:7, annualSavings:0, ...lqData.projections };
+
+  const src       = readAll();
+  const assets    = calcAssets(src);
+  const liab      = calcLiabilities(src);
+  const nw        = assets.total - liab;
+  const monthly   = calcMonthlyIncome(src) - calcMonthlySpending(src);
+  const annualSav = proj.annualSavings || Math.max(monthly * 12, 0);
+
+  // Projection table at ages
+  const checkAges = [40, 50, 60, proj.retirementAge].filter((v,i,a) => a.indexOf(v) === i && v > proj.currentAge).sort((a,b)=>a-b);
+
+  function project(years) {
+    const r = (proj.returnRate || 7) / 100;
+    let val = nw;
+    for (let y = 0; y < years; y++) {
+      val = val * (1 + r) + annualSav;
+    }
+    return val;
+  }
+
+  // Retirement readiness
+  const loss = readAll().loss;
+  const monthlySpending = calcMonthlySpending(src);
+  const annualExpenses  = monthlySpending * 12 || 40000;
+  const nestedEgg       = annualExpenses * 25; // 4% rule
+  const retYears        = Math.max(proj.retirementAge - proj.currentAge, 0);
+  const retValue        = project(retYears);
+  const readiness       = nestedEgg > 0 ? Math.min((retValue / nestedEgg) * 100, 200) : 0;
+  const readColor       = readiness >= 100 ? '#10B981' : readiness >= 50 ? '#F59E0B' : '#F43F5E';
+
+  app.innerHTML = `
+    <div class="text-xs text-gray-500 uppercase tracking-widest mb-4" style="font-family:'Space Mono',monospace;letter-spacing:0.1em">Wealth Projection</div>
+
+    <!-- Readiness gauge -->
+    <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-xs font-bold text-gray-300" style="font-family:'Space Mono',monospace">Retirement Readiness</div>
+        <div class="text-lg font-bold" style="color:${readColor};font-family:'Space Mono',monospace">${readiness.toFixed(0)}%</div>
+      </div>
+      <div style="height:10px;border-radius:5px;background:rgba(255,255,255,0.08)">
+        <div style="height:100%;border-radius:5px;width:${Math.min(readiness, 100)}%;background:${readColor};transition:width 0.5s"></div>
+      </div>
+      <div class="text-xxs text-gray-600 mt-1">At age ${proj.retirementAge} · 4% rule · ${fmtMoney(nestedEgg, true)} needed</div>
+    </div>
+
+    <!-- Projection table -->
+    <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div class="text-xs font-bold text-gray-300 mb-3" style="font-family:'Space Mono',monospace">Projected Net Worth</div>
+      <div class="text-xxs text-gray-600 mb-3">Starting from ${fmtMoney(nw, true)} · ${fmtPct(proj.returnRate)} return · ${fmtMoney(annualSav, true)}/yr savings</div>
+      ${checkAges.map(age => {
+        const years = age - proj.currentAge;
+        const val   = project(years);
+        const hit   = NW_MILESTONES.filter(m => m <= val).pop();
+        return `<div class="flex items-center justify-between py-2.5" style="border-bottom:1px solid rgba(255,255,255,0.05)">
+          <div>
+            <div class="text-sm text-gray-300">Age ${age}</div>
+            <div class="text-xxs text-gray-600">${years} years from now</div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm font-bold" style="color:${CYAN};font-family:'Space Mono',monospace">${fmtMoney(val, true)}</div>
+            ${hit ? `<div class="text-xxs" style="color:#10B981">✓ ${fmtMoney(hit, true)}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Settings form -->
+    <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div class="text-xs font-bold text-gray-300 mb-3" style="font-family:'Space Mono',monospace">Projection Settings</div>
+      <form onsubmit="saveProjectionSettings(event)">
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          ${[
+            {id:'currentAge',   label:'Current Age',      val: proj.currentAge   },
+            {id:'retirementAge',label:'Retirement Age',   val: proj.retirementAge},
+            {id:'returnRate',   label:'Expected Return %',val: proj.returnRate   },
+            {id:'annualSavings',label:'Annual Savings $',  val: Math.round(annualSav)},
+          ].map(f => `<div class="float-wrap">
+            <input id="${f.id}" type="number" inputmode="decimal" step="${f.id === 'returnRate' ? '0.1' : '1'}" min="0" class="float-input has-value" value="${f.val}" />
+            <label class="float-label active">${f.label}</label>
+          </div>`).join('')}
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl text-sm font-bold text-white" style="background:#06B6D4;font-family:'Space Mono',monospace">Save Settings</button>
+      </form>
+    </div>
+  `;
+}
+
+function saveProjectionSettings(e) {
+  e.preventDefault();
+  const lqData = loadData();
+  lqData.projections = {
+    currentAge:    parseInt($('currentAge')?.value)    || 30,
+    retirementAge: parseInt($('retirementAge')?.value) || 65,
+    returnRate:    parseFloat($('returnRate')?.value)  || 7,
+    annualSavings: parseFloat($('annualSavings')?.value) || 0,
+  };
+  saveData(lqData);
+  showToast('Projection settings saved');
+  renderProjection();
+}
+
+/* ═══════════════════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════════════════ */
+function renderSettings() {
+  const app = $('app'); if (!app) return;
+  app.innerHTML = `
+    <div class="text-xs text-gray-500 uppercase tracking-widest mb-4" style="font-family:'Space Mono',monospace;letter-spacing:0.1em">Settings</div>
+    <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div class="text-xs font-bold text-gray-300 mb-3" style="font-family:'Space Mono',monospace">Snapshot Data</div>
+      <button onclick="exportData()" class="w-full py-3 rounded-xl text-sm font-bold mb-2" style="background:rgba(6,182,212,0.2);border:1px solid rgba(6,182,212,0.4);font-family:'Space Mono',monospace;color:#06B6D4">Export Snapshots</button>
+      <label class="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center cursor-pointer" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);font-family:'Space Mono',monospace;color:#94a3b8">
+        Import Snapshots
+        <input type="file" accept=".json" class="hidden" onchange="importData(event)" />
+      </label>
+    </div>
+    <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div class="text-xs font-bold text-gray-300 mb-3" style="font-family:'Space Mono',monospace">Suite Apps</div>
+      ${[['labor','💰','LocaLabor','INCOME','rgba(99,102,241,0.15)','#6366F1'],
+         ['loss','📉','LocaLoss','SPENDING','rgba(244,63,94,0.15)','#F43F5E'],
+         ['limit','📊','LocaLimit','BUDGET','rgba(245,158,11,0.15)','#F59E0B'],
+         ['loan','💸','LocaLoan','DEBT','rgba(249,115,22,0.15)','#F97316'],
+         ['legacy','📈','LocaLegacy','ASSETS','rgba(16,185,129,0.15)','#10B981']].map(([mod,icon,name,sub,bg,color]) =>
+        `<button onclick="switchSuiteModule('${mod}')" class="w-full flex items-center gap-3 p-2 rounded-lg mb-1.5" style="background:${bg};border:1px solid rgba(255,255,255,0.06)">
+          <span style="font-size:18px">${icon}</span>
+          <div class="text-left flex-1"><div class="text-xs font-bold" style="color:${color};font-family:'Space Mono',monospace">${name}</div><div class="text-xxs text-gray-500">${sub}</div></div>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>`).join('')}
+    </div>
+    <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
+      <div class="text-xs font-bold text-gray-300 mb-1" style="font-family:'Space Mono',monospace">About</div>
+      <div class="text-xxs text-gray-600">LocaLiquid v${APP_VERSION} · Reads all LocaLedger apps via localStorage · No cloud</div>
+    </div>
+    <button onclick="confirmClearData()" class="w-full py-3 rounded-xl text-sm font-bold" style="background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);color:#F43F5E;font-family:'Space Mono',monospace">Clear Snapshot History</button>
+  `;
+}
+
+function exportData() {
+  const json = localStorage.getItem(DATA_KEY) || '{}';
+  try {
+    const b = new Blob([json],{type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a');
+    a.href = u; a.download = `localiquid-${todayISO()}.json`; a.click(); URL.revokeObjectURL(u);
+  } catch(_) { navigator.clipboard?.writeText(json).then(() => showToast('Copied to clipboard')); }
+}
+
+function importData(event) {
+  const file = event.target.files?.[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const p = JSON.parse(e.target.result); if (!p.version) throw new Error();
+      const cur = loadData();
+      (p.snapshots||[]).forEach(s => { if (!cur.snapshots.find(x => x.date === s.date)) cur.snapshots.push(s); });
+      if (p.projections) cur.projections = { ...cur.projections, ...p.projections };
+      saveData(cur); showToast('Snapshots imported'); renderSettings();
+    } catch(_) { showToast('Import failed'); }
+  };
+  reader.readAsText(file);
+}
+
+function confirmClearData() {
+  const app = $('app'); if (!app) return;
+  app.innerHTML = `<div class="rounded-xl p-6 text-center mt-8" style="background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3)">
+    <div class="text-2xl mb-3">⚠️</div>
+    <div class="text-sm font-bold text-gray-200 mb-2" style="font-family:'Space Mono',monospace">Clear snapshot history?</div>
+    <div class="text-xs text-gray-500 mb-6">All historical net worth snapshots will be deleted. Source app data (Labor, Loss, Loan, Legacy) is unaffected.</div>
+    <button onclick="clearAllData()" class="w-full py-3 rounded-xl text-sm font-bold text-white mb-2" style="background:#F43F5E;font-family:'Space Mono',monospace">Yes, Clear Snapshots</button>
+    <button onclick="renderSettings()" class="w-full py-3 rounded-xl text-sm font-bold text-gray-400" style="background:rgba(255,255,255,0.06);font-family:'Space Mono',monospace">Cancel</button>
+  </div>`;
+}
+
+function clearAllData() {
+  localStorage.removeItem(DATA_KEY); localStorage.removeItem(META_KEY);
+  showToast('Snapshot history cleared'); renderSettings();
+}
+
+/* ═══════════════════════════════════════════════════════
+   SERVICE WORKER
+═══════════════════════════════════════════════════════ */
+function initSW() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      w.addEventListener('statechange', () => {
+        if (w.state === 'installed' && navigator.serviceWorker.controller) _showUpdateBanner(w);
+      });
+    });
+  });
+}
+function _showUpdateBanner(worker) {
+  const b = document.createElement('div');
+  b.style.cssText = `position:fixed;bottom:calc(5rem + env(safe-area-inset-bottom,0px));left:1rem;right:1rem;z-index:9998;background:#1e293b;border:1px solid rgba(6,182,212,0.4);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:'Space Mono',monospace;font-size:12px;color:#f1f5f9;box-shadow:0 4px 20px rgba(0,0,0,0.5)`;
+  b.innerHTML = `<span style="color:#94a3b8">Update available</span><button id="updBtn" style="background:#06B6D4;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;font-family:'Space Mono',monospace;cursor:pointer">Update Now</button>`;
+  document.body.appendChild(b);
+  b.querySelector('#updBtn').addEventListener('click', () => {
+    worker.postMessage({type:'SKIP_WAITING'});
+    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  initSuiteDrum();
+  initSW();
+  document.querySelectorAll('.tab[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+  // Auto-log snapshot on open if it's a new day
+  const lqData = loadData();
+  const today  = todayISO();
+  if (!lqData.snapshots?.find(s => s.date === today)) logSnapshot();
+  switchTab('dashboard');
+});
+</script>
+<script src="onboarding.js" defer></script>
 </body>
 </html>
