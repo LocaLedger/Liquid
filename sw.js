@@ -1,9 +1,7 @@
-const CACHE = "localiquid-v1";
+const CACHE = "localiquid-v2";
 const ASSETS = [
   "./",
-  "./index.html",
-  "./offline-charts.js",
-  "./onboarding.js"
+  "./index.html"
 ];
 
 self.addEventListener("install", e => {
