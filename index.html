@@ -36,6 +36,13 @@
 .spark-bar{display:inline-block;width:6px;background:#06B6D4;border-radius:2px 2px 0 0;vertical-align:bottom;margin:0 1px;}
 #toast{position:fixed;bottom:calc(5.5rem + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(12px);background:#1e293b;color:#f1f5f9;padding:10px 18px;border-radius:10px;font-size:12px;font-family:'Space Mono',monospace;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 0.2s,transform 0.2s;z-index:9999;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@keyframes ring-expand {
+  from { stroke-dashoffset: 251; opacity: 0; }
+  to   { stroke-dashoffset: 0;   opacity: 1; }
+}
+#milestoneOverlay { position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9998;display:flex;align-items:center;justify-content:center; }
+#milestoneOverlay.hidden { display:none; }
+.milestone-ring { animation: ring-expand 1.2s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 </style>
 <meta name="theme-color" content="#06B6D4" />
 </head>
@@ -200,6 +207,13 @@ const CYAN        = '#06B6D4';
 const NW_MILESTONES = [10000,25000,50000,100000,250000,500000,1000000];
 
 /* ═══════════════════════════════════════════════════════
+   MODULE-LEVEL STATE
+═══════════════════════════════════════════════════════ */
+let _showRealDollars = false;
+let _compareA = null;
+let _compareB = null;
+
+/* ═══════════════════════════════════════════════════════
    STORAGE
 ═══════════════════════════════════════════════════════ */
 function loadData() {
@@ -293,6 +307,30 @@ function showToast(msg) {
   const t = $('toast'); if (!t) return;
   t.textContent = msg; t.classList.add('show');
   clearTimeout(_toastTimer); _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+let _milestoneTimer = null;
+function showMilestoneOverlay(amount) {
+  const overlay = $('milestoneOverlay'); if (!overlay) return;
+  const amtEl = overlay.querySelector('[data-testid="milestone-amount"]');
+  if (amtEl) amtEl.textContent = fmtMoney(amount, true);
+  overlay.classList.remove('hidden');
+  clearTimeout(_milestoneTimer);
+  _milestoneTimer = setTimeout(() => dismissMilestone(), 6000);
+}
+function dismissMilestone() {
+  const overlay = $('milestoneOverlay'); if (!overlay) return;
+  overlay.classList.add('hidden');
+  clearTimeout(_milestoneTimer);
+}
+
+function deflate(nominal, years, rate) {
+  return nominal / Math.pow(1 + rate / 100, years);
+}
+
+function setDollarMode(real) {
+  _showRealDollars = real;
+  renderProjection();
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -450,6 +488,35 @@ function renderDashboard() {
 /* ═══════════════════════════════════════════════════════
    SNAPSHOT (history + net worth chart)
 ═══════════════════════════════════════════════════════ */
+function selectCompare(date) {
+  if (_compareA === date) { _compareA = null; }
+  else if (_compareB === date) { _compareB = null; }
+  else if (_compareA === null) { _compareA = date; }
+  else { _compareB = date; }
+  renderSnapshot();
+}
+
+function renderDiffCard(snapA, snapB) {
+  // Ensure A is the earlier date
+  if (snapA.date > snapB.date) { const tmp = snapA; snapA = snapB; snapB = tmp; }
+  const nwDelta    = snapB.netWorth - snapA.netWorth;
+  const assetDelta = (snapB.totalAssets || 0) - (snapA.totalAssets || 0);
+  const liabDelta  = (snapB.totalLiabilities || 0) - (snapA.totalLiabilities || 0);
+  const nwColor    = nwDelta >= 0 ? '#10B981' : '#F43F5E';
+  return `<div data-testid="diff-card" class="rounded-xl p-4 mb-4" style="background:rgba(6,182,212,0.07);border:1px solid rgba(6,182,212,0.22)">
+    <div class="flex items-center justify-between mb-2">
+      <div class="text-xs text-gray-400" style="font-family:'Space Mono',monospace">${snapA.date} → ${snapB.date}</div>
+      <button onclick="_compareA=null;_compareB=null;renderSnapshot()" style="font-size:10px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#64748b;font-family:'Space Mono',monospace;cursor:pointer">Clear</button>
+    </div>
+    <div class="text-2xl font-bold mb-1" style="color:${nwColor};font-family:'Space Mono',monospace">${nwDelta >= 0 ? '+' : ''}${fmtMoney(nwDelta, true)}</div>
+    <div class="text-xxs text-gray-500">Net Worth Change</div>
+    <div class="flex gap-4 mt-2">
+      <div class="text-xxs" style="color:${assetDelta >= 0 ? '#10B981' : '#F43F5E'}">Assets ${assetDelta >= 0 ? '+' : ''}${fmtMoney(assetDelta, true)}</div>
+      <div class="text-xxs" style="color:${liabDelta <= 0 ? '#10B981' : '#F43F5E'}">Liab ${liabDelta >= 0 ? '+' : ''}${fmtMoney(liabDelta, true)}</div>
+    </div>
+  </div>`;
+}
+
 function renderSnapshot() {
   const app = $('app'); if (!app) return;
   const lqData    = loadData();
@@ -487,19 +554,34 @@ function renderSnapshot() {
 
     <button onclick="logSnapshot()" class="w-full py-3 rounded-xl text-sm font-bold mb-4" style="background:rgba(6,182,212,0.2);border:1px solid rgba(6,182,212,0.4);color:#06B6D4;font-family:'Space Mono',monospace"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Log Snapshot Now (${fmtMoney(nw, true)})</button>
 
+    ${(() => {
+      if (_compareA !== null && _compareB !== null) {
+        const snapA = snapshots.find(s => s.date === _compareA);
+        const snapB = snapshots.find(s => s.date === _compareB);
+        if (snapA && snapB) return renderDiffCard(snapA, snapB);
+      } else if (_compareA !== null) {
+        return `<div class="rounded-xl p-3 mb-4 text-center" style="background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.2)"><div class="text-xs text-gray-400" style="font-family:'Space Mono',monospace">Select a 2nd snapshot to compare</div></div>`;
+      }
+      return '';
+    })()}
+
     ${snapshots.length ? `
     <div class="text-xxs text-gray-500 uppercase tracking-widest mb-2" style="font-family:'Space Mono',monospace">History</div>
     ${snapshots.map((s,i) => {
       const prev = snapshots[i+1];
       const ch   = prev ? s.netWorth - prev.netWorth : null;
+      const isSelected = _compareA === s.date || _compareB === s.date;
       return `<div class="flex items-center justify-between py-2.5" style="border-bottom:1px solid rgba(255,255,255,0.05)">
         <div>
           <div class="text-xs text-gray-300">${s.date}</div>
           <div class="text-xxs text-gray-500">${fmtMoney(s.totalAssets, true)} assets · ${fmtMoney(s.totalLiabilities, true)} liab</div>
         </div>
-        <div class="text-right">
-          <div class="text-sm font-bold" style="color:${s.netWorth >= 0 ? CYAN : '#F43F5E'};font-family:'Space Mono',monospace">${fmtMoney(s.netWorth, true)}</div>
-          ${ch != null ? `<div class="text-xxs" style="color:${ch >= 0 ? '#10B981' : '#F43F5E'}">${ch >= 0 ? '+' : ''}${fmtMoney(ch, true)}</div>` : ''}
+        <div class="flex items-center gap-2">
+          <button onclick="selectCompare('${s.date}')" data-testid="compare-btn-${s.date}" style="font-size:10px;padding:2px 8px;border-radius:999px;background:${isSelected ? 'rgba(6,182,212,0.25)':'rgba(255,255,255,0.06)'};border:1px solid ${isSelected ? 'rgba(6,182,212,0.5)':'rgba(255,255,255,0.1)'};color:${isSelected ? '#06B6D4':'#64748b'};font-family:'Space Mono',monospace;cursor:pointer">Compare</button>
+          <div class="text-right">
+            <div class="text-sm font-bold" style="color:${s.netWorth >= 0 ? CYAN : '#F43F5E'};font-family:'Space Mono',monospace">${fmtMoney(s.netWorth, true)}</div>
+            ${ch != null ? `<div class="text-xxs" style="color:${ch >= 0 ? '#10B981' : '#F43F5E'}">${ch >= 0 ? '+' : ''}${fmtMoney(ch, true)}</div>` : ''}
+          </div>
         </div>
       </div>`;
     }).join('')}` : ''}
@@ -524,12 +606,17 @@ function logSnapshot() {
   saveData(lqData);
 
   // Milestone celebration
-  const NW_MILESTONES_HIT = NW_MILESTONES.filter(m => nw >= m);
-  const highest = NW_MILESTONES_HIT[NW_MILESTONES_HIT.length - 1];
-  if (highest) {
-    const prev = lqData.snapshots.slice(0,-1).find(s => s.netWorth < highest);
-    if (prev) showToast('Milestone reached: ' + fmtMoney(highest, true));
-    else showToast('Snapshot saved · ' + fmtMoney(nw, true));
+  lqData.milestonesHit = lqData.milestonesHit || [];
+  let newMilestone = null;
+  for (const milestone of NW_MILESTONES) {
+    if (nw >= milestone && !lqData.milestonesHit.includes(milestone)) {
+      lqData.milestonesHit.push(milestone);
+      newMilestone = milestone;
+    }
+  }
+  if (newMilestone !== null) {
+    saveData(lqData);
+    showMilestoneOverlay(newMilestone);
   } else {
     showToast('Snapshot saved · ' + fmtMoney(nw, true));
   }
@@ -544,7 +631,7 @@ function logSnapshot() {
 function renderProjection() {
   const app = $('app'); if (!app) return;
   const lqData = loadData();
-  const proj   = { currentAge:30, retirementAge:65, returnRate:7, annualSavings:0, ...lqData.projections };
+  const proj   = { currentAge:30, retirementAge:65, returnRate:7, annualSavings:0, inflationRate:3, ...lqData.projections };
 
   const src       = readAll();
   const assets    = calcAssets(src);
@@ -593,10 +680,14 @@ function renderProjection() {
     <!-- Projection table -->
     <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)">
       <div class="text-xs font-bold text-gray-300 mb-3" style="font-family:'Space Mono',monospace">Projected Net Worth</div>
-      <div class="text-xxs text-gray-600 mb-3">Starting from ${fmtMoney(nw, true)} · ${fmtPct(proj.returnRate)} return · ${fmtMoney(annualSav, true)}/yr savings</div>
+      <div class="text-xxs text-gray-600 mb-3">Starting from ${fmtMoney(nw, true)} · ${fmtPct(proj.returnRate)} return · ${fmtMoney(annualSav, true)}/yr savings (${_showRealDollars ? 'Real $, ' + proj.inflationRate + '% inflation' : 'Nominal $'})</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button data-testid="nominal-btn" onclick="setDollarMode(false)" class="flex-1 py-2 rounded-lg text-xs font-bold" style="font-family:'Space Mono',monospace;background:${!_showRealDollars ? 'rgba(6,182,212,0.2)' : 'rgba(255,255,255,0.04)'};border:1px solid ${!_showRealDollars ? 'rgba(6,182,212,0.4)' : 'rgba(255,255,255,0.1)'};color:${!_showRealDollars ? '#06B6D4' : '#64748b'}">Nominal $</button>
+        <button data-testid="real-btn" onclick="setDollarMode(true)" class="flex-1 py-2 rounded-lg text-xs font-bold" style="font-family:'Space Mono',monospace;background:${_showRealDollars ? 'rgba(6,182,212,0.2)' : 'rgba(255,255,255,0.04)'};border:1px solid ${_showRealDollars ? 'rgba(6,182,212,0.4)' : 'rgba(255,255,255,0.1)'};color:${_showRealDollars ? '#06B6D4' : '#64748b'}">Real $</button>
+      </div>
       ${checkAges.map(age => {
         const years = age - proj.currentAge;
-        const val   = project(years);
+        const val   = _showRealDollars ? deflate(project(years), years, proj.inflationRate) : project(years);
         const hit   = NW_MILESTONES.filter(m => m <= val).pop();
         return `<div class="flex items-center justify-between py-2.5" style="border-bottom:1px solid rgba(255,255,255,0.05)">
           <div>
@@ -621,8 +712,9 @@ function renderProjection() {
             {id:'retirementAge',label:'Retirement Age',   val: proj.retirementAge},
             {id:'returnRate',   label:'Expected Return %',val: proj.returnRate   },
             {id:'annualSavings',label:'Annual Savings $',  val: Math.round(annualSav)},
+            {id:'inflationRate',label:'Inflation Rate %',  val: proj.inflationRate},
           ].map(f => `<div class="float-wrap">
-            <input id="${f.id}" type="number" inputmode="decimal" step="${f.id === 'returnRate' ? '0.1' : '1'}" min="0" class="float-input has-value" value="${f.val}" />
+            <input id="${f.id}" type="number" inputmode="decimal" step="${f.id === 'returnRate' || f.id === 'inflationRate' ? '0.1' : '1'}" min="0" class="float-input has-value" value="${f.val}" />
             <label class="float-label active">${f.label}</label>
           </div>`).join('')}
         </div>
@@ -640,6 +732,7 @@ function saveProjectionSettings(e) {
     retirementAge: parseInt($('retirementAge')?.value) || 65,
     returnRate:    parseFloat($('returnRate')?.value)  || 7,
     annualSavings: parseFloat($('annualSavings')?.value) || 0,
+    inflationRate: parseFloat($('inflationRate')?.value) || 3,
   };
   saveData(lqData);
   showToast('Projection settings saved');
@@ -780,5 +873,20 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="../shared/auth-badge.js" defer></script>
+
+<div id="milestoneOverlay" class="hidden" onclick="dismissMilestone()" data-testid="milestone-overlay">
+  <div style="text-align:center;padding:32px">
+    <svg width="120" height="120" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+      <circle cx="60" cy="60" r="50" fill="none" stroke="#06B6D4" stroke-width="8"
+        stroke-dasharray="314" stroke-dashoffset="314"
+        stroke-linecap="round" transform="rotate(-90 60 60)"
+        class="milestone-ring"/>
+    </svg>
+    <div data-testid="milestone-amount" style="font-family:'Space Mono',monospace;font-size:32px;font-weight:700;color:#06B6D4;margin-top:8px"></div>
+    <div style="font-family:'Space Mono',monospace;font-size:12px;color:#94a3b8;margin-top:4px">Net Worth Milestone Reached</div>
+    <button onclick="dismissMilestone()" style="margin-top:24px;padding:12px 28px;border-radius:12px;background:rgba(6,182,212,0.2);border:1px solid rgba(6,182,212,0.4);color:#06B6D4;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;cursor:pointer">Celebrate!</button>
+  </div>
+</div>
 </body>
 </html>
